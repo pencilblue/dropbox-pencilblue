@@ -21,6 +21,7 @@ Pre-requisits:
 5) Fill in the app name
 
 6) Click “Create App”
+
 7) Under “Settings” => “OAuth” click the “Generate” button
 
 8) Copy the App Key, App Secret, and Access Token for later use
