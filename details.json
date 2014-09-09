@@ -1,0 +1,49 @@
+{
+    "uid": "dropbox-pencilblue",
+    "name": "Dropbox",
+	"description": "The dropbox plugin provides a wrapper around the googleapis module to implement the MediaProvider interface",
+    "version": "0.0.1",
+	"author": {
+		"name": "PencilBlue, LLC",
+		"email": "info@pencilblue.org",
+		"website": "http://pencilblue.org",
+		"contributors": [
+			{
+				"name": "Brian Hyder",
+				"email": ""
+			}
+		]
+	},
+    "settings": [
+		{
+			"name": "key",
+			"value": ""
+        },
+        {
+			"name": "secret",
+			"value": ""
+        },
+        {
+			"name": "token",
+			"value": ""
+        }
+        ,
+        {
+			"name": "sandbox",
+			"value": false
+        }
+	],
+	"permissions": {
+		"ACCESS_USER": [],
+		"ACCESS_WRITER": [],
+		"ACCESS_EDITOR": [],
+		"ACCESS_MANAGING_EDITOR": []
+	},
+	"main_module": {
+		"path": "dropbox.js"
+	},
+    "dependencies": {
+        "dropbox": "0.10.3",
+        "streamifier": "0.1.0"
+    }
+}
