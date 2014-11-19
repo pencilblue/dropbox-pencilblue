@@ -34,7 +34,7 @@ Installation:
 ```
 {
   "media": {
-    "provider": "/plugins/dropbox-pencilblue/include/db_media_provider.js",
+    "provider": "/plugins/dropbox-pencilblue/include/db_media_provider.js"
   }
 }
 ```
