@@ -21,15 +21,24 @@ var Streamifier = require('streamifier');
 module.exports = function DbMediaProviderModule(pb) {
     
     //pb dependencies
-    var util    = pb.util;
-    var Dropbox = pb.PluginService.require('dropbox-pencilblue', 'dropbox');
+    var util          = pb.util;
+    var PluginService = pb.PluginService;
+    var Dropbox       = pb.PluginService.require('dropbox-pencilblue', 'dropbox');
 
     /**
      *
      * @class DbMediaProvider
      * @constructor
      */
-    function DbMediaProvider() {};
+    function DbMediaProvider() {
+        
+        /**
+         *
+         * @property pluginService
+         * @type {PluginService}
+         */
+        this.pluginService = new PluginService();
+    };
 
     /**
      * Retrieves an instance of the Dropbox client
@@ -39,7 +48,7 @@ module.exports = function DbMediaProviderModule(pb) {
      * Amazon Dropbox.  The last parameter is the hash of the plugin settings.  
      */
     DbMediaProvider.prototype.getClient = function(cb) {
-        pb.plugins.getSettings('dropbox-pencilblue', function(err, settings) {
+        this.pluginService.getSettings('dropbox-pencilblue', function(err, settings) {
             if (util.isError(err)) {
                 return cb(err);
             }
