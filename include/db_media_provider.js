@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014  PencilBlue, LLC
+    Copyright (C) 2015  PencilBlue, LLC
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,254 +16,269 @@
 */
 
 //dependencies
-var Dropbox     = pb.PluginService.require('dropbox-pencilblue', 'dropbox');
 var Streamifier = require('streamifier');
 
-/**
- *
- * @class DbMediaProvider
- * @constructor
- */
-function DbMediaProvider() {};
-
-/**
- * Retrieves an instance of the Dropbox client
- * @method getClient
- * @param {Function} cb A callback that provides parameters: The first an 
- * error, if occurred.  The second is an Dropbox instance for interfacing with 
- * Amazon Dropbox.  The last parameter is the hash of the plugin settings.  
- */
-DbMediaProvider.prototype.getClient = function(cb) {
-    pb.plugins.getSettings('dropbox-pencilblue', function(err, settings) {
-        if (util.isError(err)) {
-            return cb(err);
-        }
-        
-        //build options
-        var setts = {};
-        for (var i = 0; i < settings.length; i++) {
-            setts[settings[i].name] = settings[i].value;
-        }
-        
-        var client = new Dropbox.Client({
-          key         : setts.key,
-          secret      : setts.secret,
-          sandbox     : setts.sandbox,
-          token       : setts.token,
-        });
-        cb(null, client, setts);
-    });
-};
-
-/**
- * Retrieves the item in Dropbox as a stream. 
- * @method getStream
- * @param {String} mediaPath The path/key to the media.  Typically this is a 
- * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
- * @param {Object} [options] Options for interacting with Dropbox
- * @param {Function} cb A callback that provides two parameters: An Error, if 
- * occurred and a ReadableStream that contains the media content.
- */
-DbMediaProvider.prototype.getStream = function(mediaPath, options, cb) {
-    if (pb.utils.isFunction(options)) {
-        cb      = options;
-        options = {};
-    }
-    else if (!pb.utils.isObject(options)) {
-        return cb(new Error('The options parameter must be an object'));
-    }
+module.exports = function DbMediaProviderModule(pb) {
     
-    //retrieve media
-    this.get(mediaPath, options || {}, function(err, buffer) {
-        if (util.isError(err)) {
-            return cb(err);
-        }
+    //pb dependencies
+    var util          = pb.util;
+    var PluginService = pb.PluginService;
+    var Dropbox       = pb.PluginService.require('dropbox-pencilblue', 'dropbox');
 
-        var bufferStream = Streamifier.createReadStream(buffer, {encoding: null});
-        cb(null, bufferStream);
-    });
-};
-
-/**
- * Retrieves the content from Dropbox as a String or Buffer.
- * @method get
- * @param {String} mediaPath The path/key to the media.  Typically this is a 
- * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
- * @param {Object} [options] Options for interacting with Dropbox
- * @param {Function} cb A callback that provides two parameters: An Error, if 
- * occurred and an entity that contains the media content.
- */
-DbMediaProvider.prototype.get = function(mediaPath, options, cb) {
-    if (pb.utils.isFunction(options)) {
-        cb      = options;
-        options = {};
-    }
-    else if (!pb.utils.isObject(options)) {
-        return cb(new Error('The options parameter must be an object'));
-    }
-    
-    this.getClient(function(err, client) {
-        if (util.isError(err)) {
-            return cb(err);
-        }
+    /**
+     *
+     * @class DbMediaProvider
+     * @constructor
+     */
+    function DbMediaProvider() {
         
-        var params = { 
-            buffer: true, 
-            binary: true 
-        };
-        client.readFile(mediaPath, params, cb);
-    });
-};
+        /**
+         *
+         * @property pluginService
+         * @type {PluginService}
+         */
+        this.pluginService = new PluginService();
+    };
 
-/**
- * Sets media content into an Dropbox bucket based on the specified media path and 
- * options.  The stream provided must be a ReadableStream.
- * @method setStream
- * @param {ReadableStream} stream The content stream
- * @param {String} mediaPath The path/key to the media.  Typically this is a 
- * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
- * @param {Object} [options] Options for interacting with Dropbox
- * @param {Function} cb A callback that provides two parameters: An Error, if 
- * occurred and the success of the operation.
- */
-DbMediaProvider.prototype.setStream = function(stream, mediaPath, options, cb) {
-    if (pb.utils.isFunction(options)) {
-        cb      = options;
-        options = {};
-    }
-    else if (!pb.utils.isObject(options)) {
-        return cb(new Error('The options parameter must be an object'));
-    }
-    
-    this.getClient(function(err, client) {
-        if (util.isError(err)) {
-            return cb(err);
-        }
-        
-        var ended  = false;
-        var cursor = null;
-        stream.on('data', function (data) {
-            stream.pause();
-            client.resumableUploadStep(data, cursor, function (error, new_cursor) {
-                if (util.isError(error)) {
-                    stream.emit(error);
-                }
-                cursor = new_cursor;
-                stream.resume();
-                                                                                   
-                if (ended) {
-                    client.resumableUploadFinish(mediaPath, cursor, function (error, stats) {
-                        cb(error, stats);
-                    });   
-                }
+    /**
+     * Retrieves an instance of the Dropbox client
+     * @method getClient
+     * @param {Function} cb A callback that provides parameters: The first an 
+     * error, if occurred.  The second is an Dropbox instance for interfacing with 
+     * Amazon Dropbox.  The last parameter is the hash of the plugin settings.  
+     */
+    DbMediaProvider.prototype.getClient = function(cb) {
+        this.pluginService.getSettings('dropbox-pencilblue', function(err, settings) {
+            if (util.isError(err)) {
+                return cb(err);
+            }
+
+            //build options
+            var setts = {};
+            for (var i = 0; i < settings.length; i++) {
+                setts[settings[i].name] = settings[i].value;
+            }
+
+            var client = new Dropbox.Client({
+              key         : setts.key,
+              secret      : setts.secret,
+              sandbox     : setts.sandbox,
+              token       : setts.token,
             });
-        })
-        .on('end', function () {
-            ended = true;
-        })
-        .on('error', cb);
-    });
-};
+            cb(null, client, setts);
+        });
+    };
 
-/**
- * Sets media content into an Dropbox bucket based on the specified media path and 
- * options.  The data must be in the form of a String or Buffer.
- * @method setStream
- * @param {String|Buffer|Stream} fileDataStrOrBuffOrStream The content to persist
- * @param {String} mediaPath The path/key to the media.  Typically this is a 
- * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
- * @param {Object} [options] Options for interacting with Dropbox
- * @param {Function} cb A callback that provides two parameters: An Error, if 
- * occurred and the success of the operation.
- */
-DbMediaProvider.prototype.set = function(fileDataStrOrBuff, mediaPath, options, cb) {
-    if (pb.utils.isFunction(options)) {
-        cb      = options;
-        options = {};
-    }
-    else if (!pb.utils.isObject(options)) {
-        return cb(new Error('The options parameter must be an object'));
-    }
-    
-    this.getClient(function(err, client) {
-        if(util.isError(err)) {
-            return cb(err);
+    /**
+     * Retrieves the item in Dropbox as a stream. 
+     * @method getStream
+     * @param {String} mediaPath The path/key to the media.  Typically this is a 
+     * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
+     * @param {Object} [options] Options for interacting with Dropbox
+     * @param {Function} cb A callback that provides two parameters: An Error, if 
+     * occurred and a ReadableStream that contains the media content.
+     */
+    DbMediaProvider.prototype.getStream = function(mediaPath, options, cb) {
+        if (util.isFunction(options)) {
+            cb      = options;
+            options = {};
         }
-        client.writeFile(mediaPath, fileDataStrOrBuff, cb);
-    });
-};
-
-/**
- * Part of the interface but isn't used anywhere yet.  This implementation 
- * throw an error because it is not implemented.
- * @method createWriteStream
- * @param {String} mediaPath The path/key to the media.  Typically this is a 
- * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
- * @param {Function} cb A callback that provides two parameters: An Error, if 
- * occurred and a WriteableStream.
- */
-DbMediaProvider.prototype.createWriteStream = function(mediaPath, cb) {
-    throw new Error('Not implemented');
-};
-
-/**
- * Checks to see if the file actually exists in Dropbox
- * @method exists
- * @param {String} mediaPath The path/key to the media.  Typically this is a 
- * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
- * @param {Function} cb A callback that provides two parameters: An Error, if 
- * occurred and a Boolean.
- */
-DbMediaProvider.prototype.exists = function(mediaPath, cb) {
-    this.stat(mediaPath, function(err, stat) {
-        cb(null, stat ? true : false); 
-    });
-};
-
-/**
- * Deletes a file out of Dropbox
- * @method delete
- * @param {String} mediaPath The path/key to the media.  Typically this is a 
- * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
- * @param {Object} [options] Options for interacting with Dropbox
- * @param {Function} cb A callback that provides two parameters: An Error, if 
- * occurred and the success of the operation.
- */
-DbMediaProvider.prototype.delete = function(mediaPath, options, cb) {
-    if (pb.utils.isFunction(options)) {
-        cb      = options;
-        options = {};
-    }
-    else if (!pb.utils.isObject(options)) {
-        return cb(new Error('The options parameter must be an object'));
-    }
-    
-    this.getClient(function(err, client) {
-        if(util.isError(err)) {
-            return cb(err);
+        else if (!util.isObject(options)) {
+            return cb(new Error('The options parameter must be an object'));
         }
-        
-        client.remove(mediaPath, cb);
-    });
-};
-       
-/**
- * Retrieve the stats on the file
- * @method stat
- * @param {String} mediaPath The path/key to the media.  Typically this is a 
- * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
- * @param {Function} cb A callback that provides two parameters: An Error, if 
- * occurred and an object that contains the file stats
- */
-DbMediaProvider.prototype.stat = function(mediaPath, cb) {
-    this.getClient(function(err, client) {
-        if(util.isError(err)) {
-            return cb(err);
-        }
-        
-        client.stat(mediaPath, cb);
-    });
-};
 
-//exports
-module.exports = DbMediaProvider;
+        //retrieve media
+        this.get(mediaPath, options || {}, function(err, buffer) {
+            if (util.isError(err)) {
+                return cb(err);
+            }
+
+            var bufferStream = Streamifier.createReadStream(buffer, {encoding: null});
+            cb(null, bufferStream);
+        });
+    };
+
+    /**
+     * Retrieves the content from Dropbox as a String or Buffer.
+     * @method get
+     * @param {String} mediaPath The path/key to the media.  Typically this is a 
+     * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
+     * @param {Object} [options] Options for interacting with Dropbox
+     * @param {Function} cb A callback that provides two parameters: An Error, if 
+     * occurred and an entity that contains the media content.
+     */
+    DbMediaProvider.prototype.get = function(mediaPath, options, cb) {
+        if (util.isFunction(options)) {
+            cb      = options;
+            options = {};
+        }
+        else if (!util.isObject(options)) {
+            return cb(new Error('The options parameter must be an object'));
+        }
+
+        this.getClient(function(err, client) {
+            if (util.isError(err)) {
+                return cb(err);
+            }
+
+            var params = { 
+                buffer: true, 
+                binary: true 
+            };
+            client.readFile(mediaPath, params, cb);
+        });
+    };
+
+    /**
+     * Sets media content into an Dropbox bucket based on the specified media path and 
+     * options.  The stream provided must be a ReadableStream.
+     * @method setStream
+     * @param {ReadableStream} stream The content stream
+     * @param {String} mediaPath The path/key to the media.  Typically this is a 
+     * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
+     * @param {Object} [options] Options for interacting with Dropbox
+     * @param {Function} cb A callback that provides two parameters: An Error, if 
+     * occurred and the success of the operation.
+     */
+    DbMediaProvider.prototype.setStream = function(stream, mediaPath, options, cb) {
+        if (util.isFunction(options)) {
+            cb      = options;
+            options = {};
+        }
+        else if (!util.isObject(options)) {
+            return cb(new Error('The options parameter must be an object'));
+        }
+
+        this.getClient(function(err, client) {
+            if (util.isError(err)) {
+                return cb(err);
+            }
+
+            var ended  = false;
+            var cursor = null;
+            stream.on('data', function (data) {
+                stream.pause();
+                client.resumableUploadStep(data, cursor, function (error, new_cursor) {
+                    if (util.isError(error)) {
+                        stream.emit(error);
+                    }
+                    cursor = new_cursor;
+                    stream.resume();
+
+                    if (ended) {
+                        client.resumableUploadFinish(mediaPath, cursor, function (error, stats) {
+                            cb(error, stats);
+                        });   
+                    }
+                });
+            })
+            .on('end', function () {
+                ended = true;
+            })
+            .on('error', cb);
+        });
+    };
+
+    /**
+     * Sets media content into an Dropbox bucket based on the specified media path and 
+     * options.  The data must be in the form of a String or Buffer.
+     * @method setStream
+     * @param {String|Buffer|Stream} fileDataStrOrBuffOrStream The content to persist
+     * @param {String} mediaPath The path/key to the media.  Typically this is a 
+     * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
+     * @param {Object} [options] Options for interacting with Dropbox
+     * @param {Function} cb A callback that provides two parameters: An Error, if 
+     * occurred and the success of the operation.
+     */
+    DbMediaProvider.prototype.set = function(fileDataStrOrBuff, mediaPath, options, cb) {
+        if (util.isFunction(options)) {
+            cb      = options;
+            options = {};
+        }
+        else if (!util.isObject(options)) {
+            return cb(new Error('The options parameter must be an object'));
+        }
+
+        this.getClient(function(err, client) {
+            if(util.isError(err)) {
+                return cb(err);
+            }
+            client.writeFile(mediaPath, fileDataStrOrBuff, cb);
+        });
+    };
+
+    /**
+     * Part of the interface but isn't used anywhere yet.  This implementation 
+     * throw an error because it is not implemented.
+     * @method createWriteStream
+     * @param {String} mediaPath The path/key to the media.  Typically this is a 
+     * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
+     * @param {Function} cb A callback that provides two parameters: An Error, if 
+     * occurred and a WriteableStream.
+     */
+    DbMediaProvider.prototype.createWriteStream = function(mediaPath, cb) {
+        throw new Error('Not implemented');
+    };
+
+    /**
+     * Checks to see if the file actually exists in Dropbox
+     * @method exists
+     * @param {String} mediaPath The path/key to the media.  Typically this is a 
+     * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
+     * @param {Function} cb A callback that provides two parameters: An Error, if 
+     * occurred and a Boolean.
+     */
+    DbMediaProvider.prototype.exists = function(mediaPath, cb) {
+        this.stat(mediaPath, function(err, stat) {
+            cb(null, stat ? true : false); 
+        });
+    };
+
+    /**
+     * Deletes a file out of Dropbox
+     * @method delete
+     * @param {String} mediaPath The path/key to the media.  Typically this is a 
+     * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
+     * @param {Object} [options] Options for interacting with Dropbox
+     * @param {Function} cb A callback that provides two parameters: An Error, if 
+     * occurred and the success of the operation.
+     */
+    DbMediaProvider.prototype.delete = function(mediaPath, options, cb) {
+        if (util.isFunction(options)) {
+            cb      = options;
+            options = {};
+        }
+        else if (!util.isObject(options)) {
+            return cb(new Error('The options parameter must be an object'));
+        }
+
+        this.getClient(function(err, client) {
+            if(util.isError(err)) {
+                return cb(err);
+            }
+
+            client.remove(mediaPath, cb);
+        });
+    };
+
+    /**
+     * Retrieve the stats on the file
+     * @method stat
+     * @param {String} mediaPath The path/key to the media.  Typically this is a 
+     * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
+     * @param {Function} cb A callback that provides two parameters: An Error, if 
+     * occurred and an object that contains the file stats
+     */
+    DbMediaProvider.prototype.stat = function(mediaPath, cb) {
+        this.getClient(function(err, client) {
+            if(util.isError(err)) {
+                return cb(err);
+            }
+
+            client.stat(mediaPath, cb);
+        });
+    };
+
+    //exports
+    return DbMediaProvider;
+};
