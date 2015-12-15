@@ -30,14 +30,13 @@ module.exports = function DbMediaProviderModule(pb) {
      * @class DbMediaProvider
      * @constructor
      */
-    function DbMediaProvider() {
+    function DbMediaProvider(context) {
         
         /**
-         *
          * @property pluginService
          * @type {PluginService}
          */
-        this.pluginService = new PluginService();
+        this.pluginService = new PluginService(context);
     };
 
     /**
@@ -48,15 +47,9 @@ module.exports = function DbMediaProviderModule(pb) {
      * Amazon Dropbox.  The last parameter is the hash of the plugin settings.  
      */
     DbMediaProvider.prototype.getClient = function(cb) {
-        this.pluginService.getSettings('dropbox-pencilblue', function(err, settings) {
+        this.pluginService.getSettingsKV('dropbox-pencilblue', function(err, setts) {
             if (util.isError(err)) {
                 return cb(err);
-            }
-
-            //build options
-            var setts = {};
-            for (var i = 0; i < settings.length; i++) {
-                setts[settings[i].name] = settings[i].value;
             }
 
             var client = new Dropbox.Client({
