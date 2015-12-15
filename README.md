@@ -30,7 +30,7 @@ Installation:
 
 1) Clone repo into your PencilBlue's **plugins** directory.
 
-2) Edit your **config.json** file to configure the media provider
+2) Edit your **config.js** file to configure the media provider
 ```
 {
   "media": {
