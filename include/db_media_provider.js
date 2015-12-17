@@ -19,7 +19,7 @@
 var Streamifier = require('streamifier');
 
 module.exports = function DbMediaProviderModule(pb) {
-    
+
     //pb dependencies
     var util          = pb.util;
     var PluginService = pb.PluginService;
@@ -31,7 +31,7 @@ module.exports = function DbMediaProviderModule(pb) {
      * @constructor
      */
     function DbMediaProvider(context) {
-        
+
         /**
          * @property pluginService
          * @type {PluginService}
@@ -42,9 +42,9 @@ module.exports = function DbMediaProviderModule(pb) {
     /**
      * Retrieves an instance of the Dropbox client
      * @method getClient
-     * @param {Function} cb A callback that provides parameters: The first an 
-     * error, if occurred.  The second is an Dropbox instance for interfacing with 
-     * Amazon Dropbox.  The last parameter is the hash of the plugin settings.  
+     * @param {Function} cb A callback that provides parameters: The first an
+     * error, if occurred.  The second is an Dropbox instance for interfacing with
+     * Amazon Dropbox.  The last parameter is the hash of the plugin settings.
      */
     DbMediaProvider.prototype.getClient = function(cb) {
         this.pluginService.getSettingsKV('dropbox-pencilblue', function(err, setts) {
@@ -63,12 +63,12 @@ module.exports = function DbMediaProviderModule(pb) {
     };
 
     /**
-     * Retrieves the item in Dropbox as a stream. 
+     * Retrieves the item in Dropbox as a stream.
      * @method getStream
-     * @param {String} mediaPath The path/key to the media.  Typically this is a 
+     * @param {String} mediaPath The path/key to the media.  Typically this is a
      * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
      * @param {Object} [options] Options for interacting with Dropbox
-     * @param {Function} cb A callback that provides two parameters: An Error, if 
+     * @param {Function} cb A callback that provides two parameters: An Error, if
      * occurred and a ReadableStream that contains the media content.
      */
     DbMediaProvider.prototype.getStream = function(mediaPath, options, cb) {
@@ -85,7 +85,11 @@ module.exports = function DbMediaProviderModule(pb) {
             if (util.isError(err)) {
                 return cb(err);
             }
-
+            else if (!Buffer.isBuffer(buffer)) {
+                var err = new Error('NOT FOUND');
+                err.code = 404;
+                return cb(err);
+            }
             var bufferStream = Streamifier.createReadStream(buffer, {encoding: null});
             cb(null, bufferStream);
         });
@@ -94,10 +98,10 @@ module.exports = function DbMediaProviderModule(pb) {
     /**
      * Retrieves the content from Dropbox as a String or Buffer.
      * @method get
-     * @param {String} mediaPath The path/key to the media.  Typically this is a 
+     * @param {String} mediaPath The path/key to the media.  Typically this is a
      * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
      * @param {Object} [options] Options for interacting with Dropbox
-     * @param {Function} cb A callback that provides two parameters: An Error, if 
+     * @param {Function} cb A callback that provides two parameters: An Error, if
      * occurred and an entity that contains the media content.
      */
     DbMediaProvider.prototype.get = function(mediaPath, options, cb) {
@@ -114,23 +118,23 @@ module.exports = function DbMediaProviderModule(pb) {
                 return cb(err);
             }
 
-            var params = { 
-                buffer: true, 
-                binary: true 
+            var params = {
+                buffer: true,
+                binary: true
             };
             client.readFile(mediaPath, params, cb);
         });
     };
 
     /**
-     * Sets media content into an Dropbox bucket based on the specified media path and 
+     * Sets media content into an Dropbox bucket based on the specified media path and
      * options.  The stream provided must be a ReadableStream.
      * @method setStream
      * @param {ReadableStream} stream The content stream
-     * @param {String} mediaPath The path/key to the media.  Typically this is a 
+     * @param {String} mediaPath The path/key to the media.  Typically this is a
      * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
      * @param {Object} [options] Options for interacting with Dropbox
-     * @param {Function} cb A callback that provides two parameters: An Error, if 
+     * @param {Function} cb A callback that provides two parameters: An Error, if
      * occurred and the success of the operation.
      */
     DbMediaProvider.prototype.setStream = function(stream, mediaPath, options, cb) {
@@ -161,7 +165,7 @@ module.exports = function DbMediaProviderModule(pb) {
                     if (ended) {
                         client.resumableUploadFinish(mediaPath, cursor, function (error, stats) {
                             cb(error, stats);
-                        });   
+                        });
                     }
                 });
             })
@@ -173,14 +177,14 @@ module.exports = function DbMediaProviderModule(pb) {
     };
 
     /**
-     * Sets media content into an Dropbox bucket based on the specified media path and 
+     * Sets media content into an Dropbox bucket based on the specified media path and
      * options.  The data must be in the form of a String or Buffer.
      * @method setStream
      * @param {String|Buffer|Stream} fileDataStrOrBuffOrStream The content to persist
-     * @param {String} mediaPath The path/key to the media.  Typically this is a 
+     * @param {String} mediaPath The path/key to the media.  Typically this is a
      * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
      * @param {Object} [options] Options for interacting with Dropbox
-     * @param {Function} cb A callback that provides two parameters: An Error, if 
+     * @param {Function} cb A callback that provides two parameters: An Error, if
      * occurred and the success of the operation.
      */
     DbMediaProvider.prototype.set = function(fileDataStrOrBuff, mediaPath, options, cb) {
@@ -201,12 +205,12 @@ module.exports = function DbMediaProviderModule(pb) {
     };
 
     /**
-     * Part of the interface but isn't used anywhere yet.  This implementation 
+     * Part of the interface but isn't used anywhere yet.  This implementation
      * throw an error because it is not implemented.
      * @method createWriteStream
-     * @param {String} mediaPath The path/key to the media.  Typically this is a 
+     * @param {String} mediaPath The path/key to the media.  Typically this is a
      * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
-     * @param {Function} cb A callback that provides two parameters: An Error, if 
+     * @param {Function} cb A callback that provides two parameters: An Error, if
      * occurred and a WriteableStream.
      */
     DbMediaProvider.prototype.createWriteStream = function(mediaPath, cb) {
@@ -216,24 +220,24 @@ module.exports = function DbMediaProviderModule(pb) {
     /**
      * Checks to see if the file actually exists in Dropbox
      * @method exists
-     * @param {String} mediaPath The path/key to the media.  Typically this is a 
+     * @param {String} mediaPath The path/key to the media.  Typically this is a
      * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
-     * @param {Function} cb A callback that provides two parameters: An Error, if 
+     * @param {Function} cb A callback that provides two parameters: An Error, if
      * occurred and a Boolean.
      */
     DbMediaProvider.prototype.exists = function(mediaPath, cb) {
         this.stat(mediaPath, function(err, stat) {
-            cb(null, stat ? true : false); 
+            cb(null, stat ? true : false);
         });
     };
 
     /**
      * Deletes a file out of Dropbox
      * @method delete
-     * @param {String} mediaPath The path/key to the media.  Typically this is a 
+     * @param {String} mediaPath The path/key to the media.  Typically this is a
      * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
      * @param {Object} [options] Options for interacting with Dropbox
-     * @param {Function} cb A callback that provides two parameters: An Error, if 
+     * @param {Function} cb A callback that provides two parameters: An Error, if
      * occurred and the success of the operation.
      */
     DbMediaProvider.prototype.delete = function(mediaPath, options, cb) {
@@ -257,9 +261,9 @@ module.exports = function DbMediaProviderModule(pb) {
     /**
      * Retrieve the stats on the file
      * @method stat
-     * @param {String} mediaPath The path/key to the media.  Typically this is a 
+     * @param {String} mediaPath The path/key to the media.  Typically this is a
      * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
-     * @param {Function} cb A callback that provides two parameters: An Error, if 
+     * @param {Function} cb A callback that provides two parameters: An Error, if
      * occurred and an object that contains the file stats
      */
     DbMediaProvider.prototype.stat = function(mediaPath, cb) {
