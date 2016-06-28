@@ -1,9 +1,9 @@
 {
     "uid": "dropbox-pencilblue",
     "name": "Dropbox",
-	"description": "The dropbox plugin provides a wrapper around the googleapis module to implement the MediaProvider interface",
-    "version": "0.2.1",
-    "pb_version": "0.5.x",
+	"description": "The Dropbox plugin provides a wrapper around the Dropbox SDK module to implement the MediaProvider interface",
+    "version": "0.2.2",
+    "pb_version": ">=0.6.x <1.x",
 	"author": {
 		"name": "PencilBlue, LLC",
 		"email": "info@pencilblue.org",
