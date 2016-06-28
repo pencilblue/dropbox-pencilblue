@@ -151,24 +151,25 @@ module.exports = function DbMediaProviderModule(pb) {
             var cursor = null;
             var ended = false;
             var count = 0;
-            stream.on('data', function (data) {console.log('here1:%s', new Date().getTime());
+            stream.on('data', function (data) {
                 count++;
 
-                stream.pause();
-                client.resumableUploadStep(data, cursor, function (error, new_cursor) {console.log('here2:%s', new Date().getTime());
+                client.resumableUploadStep(data, cursor, function (error, new_cursor) {
                     if (util.isError(error)) {
                         return stream.emit('error', error);
                     }
+                    stream.resume();
+
                     cursor = new_cursor;
                     count--;
 
-                    stream.resume();
-                    if (ended && count === 0) {console.log('here4:%s', new Date().getTime());
+                    if (ended && count === 0) {
                         client.resumableUploadFinish(mediaPath, cursor, cb);
                     }
                 });
+                stream.pause();
             })
-            .on('end', function () {console.log('here3:%s', new Date().getTime());
+            .on('end', function () {
                 ended = true;
             })
             .once('error', cb);
