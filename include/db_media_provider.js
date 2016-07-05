@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015  PencilBlue, LLC
+    Copyright (C) 2016  PencilBlue, LLC
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -14,16 +14,15 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-//dependencies
-var Streamifier = require('streamifier');
+'use strict';
 
 module.exports = function DbMediaProviderModule(pb) {
 
     //pb dependencies
     var util          = pb.util;
     var PluginService = pb.PluginService;
-    var Dropbox       = pb.PluginService.require('dropbox-pencilblue', 'dropbox');
+    var Dropbox       = pb.NpmPluginDependencyService.require('dropbox-pencilblue', 'dropbox');
+    var Streamifier = pb.NpmPluginDependencyService.require('dropbox-pencilblue', 'streamifier');
 
     /**
      *
@@ -37,7 +36,7 @@ module.exports = function DbMediaProviderModule(pb) {
          * @type {PluginService}
          */
         this.pluginService = new PluginService(context);
-    };
+    }
 
     /**
      * Retrieves an instance of the Dropbox client
@@ -56,7 +55,7 @@ module.exports = function DbMediaProviderModule(pb) {
               key         : setts.key,
               secret      : setts.secret,
               sandbox     : setts.sandbox,
-              token       : setts.token,
+              token       : setts.token
             });
             cb(null, client, setts);
         });
@@ -86,9 +85,7 @@ module.exports = function DbMediaProviderModule(pb) {
                 return cb(err);
             }
             else if (!Buffer.isBuffer(buffer)) {
-                var err = new Error('NOT FOUND');
-                err.code = 404;
-                return cb(err);
+                return cb(pb.BaseObjectService.notFound());
             }
             var bufferStream = Streamifier.createReadStream(buffer, {encoding: null});
             cb(null, bufferStream);
@@ -151,28 +148,31 @@ module.exports = function DbMediaProviderModule(pb) {
                 return cb(err);
             }
 
-            var ended  = false;
             var cursor = null;
+            var ended = false;
+            var count = 0;
             stream.on('data', function (data) {
-                stream.pause();
+                count++;
+
                 client.resumableUploadStep(data, cursor, function (error, new_cursor) {
                     if (util.isError(error)) {
-                        stream.emit(error);
+                        return stream.emit('error', error);
                     }
-                    cursor = new_cursor;
                     stream.resume();
 
-                    if (ended) {
-                        client.resumableUploadFinish(mediaPath, cursor, function (error, stats) {
-                            cb(error, stats);
-                        });
+                    cursor = new_cursor;
+                    count--;
+
+                    if (ended && count === 0) {
+                        client.resumableUploadFinish(mediaPath, cursor, cb);
                     }
                 });
+                stream.pause();
             })
             .on('end', function () {
                 ended = true;
             })
-            .on('error', cb);
+            .once('error', cb);
         });
     };
 
@@ -180,7 +180,7 @@ module.exports = function DbMediaProviderModule(pb) {
      * Sets media content into an Dropbox bucket based on the specified media path and
      * options.  The data must be in the form of a String or Buffer.
      * @method setStream
-     * @param {String|Buffer|Stream} fileDataStrOrBuffOrStream The content to persist
+     * @param {String|Buffer|Stream} fileDataStrOrBuff The content to persist
      * @param {String} mediaPath The path/key to the media.  Typically this is a
      * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
      * @param {Object} [options] Options for interacting with Dropbox
@@ -211,7 +211,7 @@ module.exports = function DbMediaProviderModule(pb) {
      * @param {String} mediaPath The path/key to the media.  Typically this is a
      * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
      * @param {Function} cb A callback that provides two parameters: An Error, if
-     * occurred and a WriteableStream.
+     * occurred and a WritableStream.
      */
     DbMediaProvider.prototype.createWriteStream = function(mediaPath, cb) {
         throw new Error('Not implemented');
