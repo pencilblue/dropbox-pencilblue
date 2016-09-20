@@ -93,7 +93,7 @@ module.exports = function DbMediaProviderModule(pb) {
     };
 
     /**
-     * Retrieves the content from Dropbox as a String or Buffer.
+     * Retrieves the content from Mongo as a String or Buffer.
      * @method get
      * @param {String} mediaPath The path/key to the media.  Typically this is a
      * path such as: /media/2014/9/540a3ff0e30ddfb9e60000be-1409957872680.jpg
@@ -124,7 +124,7 @@ module.exports = function DbMediaProviderModule(pb) {
     };
 
     /**
-     * Sets media content into an Dropbox bucket based on the specified media path and
+     * Sets media content into an Mongo bucket based on the specified media path and
      * options.  The stream provided must be a ReadableStream.
      * @method setStream
      * @param {ReadableStream} stream The content stream
